@@ -22,6 +22,296 @@ end
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
+-- vars
+local pcall, pairs, ipairs, next, type, typeof, tostring, tonumber = pcall, pairs, ipairs, next, type, typeof, tostring, tonumber
+local HttpService = cloneref(game:GetService("HttpService"))
+local Color3, Font, Enum = Color3, Font, Enum
+local isfile, writefile, getcustomasset = isfile, writefile, getcustomasset
+
+-- Fonts модуль
+local Fonts = {}
+
+do -- Fonts functions
+    local function decode_base64(f)
+        local h, i
+        h, i = pcall(
+            function()
+                return syn and syn.crypt and syn.crypt.base64 and syn.crypt.base64.decode(f)
+            end
+        )
+        if h and i then
+            return i
+        end
+        h, i = pcall(
+            function()
+                return crypt and crypt.base64 and crypt.base64decode(f)
+            end
+        )
+        if h and i then
+            return i
+        end
+        h, i = pcall(
+            function()
+                return bit and bit.base64 and bit.base64decode(f)
+            end
+        )
+        if h and i then
+            return i
+        end
+        if base64_decode then
+            local j, k = pcall(base64_decode, f)
+            if j and k then
+                return k
+            end
+        end
+        h, i = pcall(
+            function()
+                return HttpService:Base64Decode(f)
+            end
+        )
+        if h and i then
+            return i
+        end
+        return f
+    end
+
+    local default_font_tuning = {
+        ProggyClean = {size = 13, stroke_t = 0.0, stroke_c = Color3.fromRGB(0, 0, 0)},
+        ProggyTiny = {size = 12, stroke_t = 0.0, stroke_c = Color3.fromRGB(0, 0, 0)},
+        Minecraftia = {size = 16, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        SmallestPixel7 = {size = 12, stroke_t = 0.0, stroke_c = Color3.fromRGB(0, 0, 0)},
+        Verdana = {size = 13, stroke_t = 0.3, stroke_c = Color3.fromRGB(0, 0, 0)},
+        VerdanaBold = {size = 13, stroke_t = 0.4, stroke_c = Color3.fromRGB(0, 0, 0)},
+        Tahoma = {size = 13, stroke_t = 0.3, stroke_c = Color3.fromRGB(0, 0, 0)},
+        TahomaBold = {size = 13, stroke_t = 0.4, stroke_c = Color3.fromRGB(0, 0, 0)},
+        CSGO = {size = 16, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        WindowsXPTahoma = {size = 13, stroke_t = 0.3, stroke_c = Color3.fromRGB(0, 0, 0)},
+        Stratum2 = {size = 14, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        Visitor = {size = 14, stroke_t = 0.0, stroke_c = Color3.fromRGB(0, 0, 0)},
+        -- Добавляем новые шрифты
+        Roboto = {size = 13, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        RobotoMedium = {size = 13, stroke_t = 0.3, stroke_c = Color3.fromRGB(0, 0, 0)},
+        RobotoBold = {size = 13, stroke_t = 0.4, stroke_c = Color3.fromRGB(0, 0, 0)},
+        OpenSans = {size = 13, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        OpenSansBold = {size = 13, stroke_t = 0.4, stroke_c = Color3.fromRGB(0, 0, 0)},
+        SourceSansPro = {size = 13, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        SourceSansProBold = {size = 13, stroke_t = 0.4, stroke_c = Color3.fromRGB(0, 0, 0)},
+        Montserrat = {size = 13, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        MontserratBold = {size = 13, stroke_t = 0.4, stroke_c = Color3.fromRGB(0, 0, 0)},
+        Poppins = {size = 13, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        PoppinsBold = {size = 13, stroke_t = 0.4, stroke_c = Color3.fromRGB(0, 0, 0)},
+        Inter = {size = 13, stroke_t = 0.2, stroke_c = Color3.fromRGB(0, 0, 0)},
+        InterBold = {size = 13, stroke_t = 0.4, stroke_c = Color3.fromRGB(0, 0, 0)},
+        JetBrainsMono = {size = 12, stroke_t = 0.1, stroke_c = Color3.fromRGB(0, 0, 0)},
+        FiraCode = {size = 12, stroke_t = 0.1, stroke_c = Color3.fromRGB(0, 0, 0)},
+        CascadiaCode = {size = 12, stroke_t = 0.1, stroke_c = Color3.fromRGB(0, 0, 0)}
+    }
+
+    function Fonts.get_font_tuning(font_name)
+        local config_font_tuning = _G.ESP_Config and _G.ESP_Config.FontTuning
+        local tuning = default_font_tuning[font_name] or {size = 12, stroke_t = 0.0, stroke_c = Color3.fromRGB(0, 0, 0)}
+
+        if config_font_tuning and type(config_font_tuning) == "table" then
+            local custom_tuning = config_font_tuning[font_name]
+            if custom_tuning then
+                tuning.size = custom_tuning.size or tuning.size
+                tuning.stroke_t = custom_tuning.stroke_t ~= nil and custom_tuning.stroke_t or tuning.stroke_t
+                tuning.stroke_c = custom_tuning.stroke_c or tuning.stroke_c
+            end
+        end
+        return tuning
+    end
+
+    local font_sources = {
+        {
+            "ProggyClean.ttf",
+            "ProggyClean.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/ProggyClean.txt"
+        },
+        {
+            "ProggyTiny.ttf",
+            "ProggyTiny.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/ProggyTiny.txt"
+        },
+        {
+            "Minecraftia.ttf",
+            "Minecraftia.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/Minecraftia.txt"
+        },
+        {
+            "SmallestPixel7.ttf",
+            "SmallestPixel7.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/SmallestPixel7.txt"
+        },
+        {
+            "Verdana.ttf",
+            "Verdana.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/Verdana.txt"
+        },
+        {
+            "VerdanaBold.ttf",
+            "VerdanaBold.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/VerdanaBold.txt"
+        },
+        {
+            "Tahoma.ttf",
+            "Tahoma.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/Tahoma.txt"
+        },
+        {
+            "TahomaBold.ttf",
+            "TahomaBold.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/TahomaBold.txt"
+        },
+        {
+            "CSGO.ttf",
+            "CSGO.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/CSGO.txt"
+        },
+        {
+            "WindowsXPTahoma.ttf",
+            "WindowsXPTahoma.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/WindowsXPTahoma.txt"
+        },
+        {
+            "Stratum2.ttf",
+            "Stratum2.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/Stratum2.txt"
+        },
+        {
+            "Visitor.ttf",
+            "Visitor.json",
+            "https://raw.githubusercontent.com/suspendthread/uwu/refs/heads/main/dependencies/assets/fonts/Visitor.txt"
+        },
+        -- Новые шрифты
+        {
+            "Roboto.ttf",
+            "Roboto.json",
+            "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2"
+        },
+        {
+            "RobotoMedium.ttf",
+            "RobotoMedium.json",
+            "https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmEU9fBBc4.woff2"
+        },
+        {
+            "RobotoBold.ttf",
+            "RobotoBold.json",
+            "https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4.woff2"
+        },
+        {
+            "OpenSans.ttf",
+            "OpenSans.json",
+            "https://fonts.gstatic.com/s/opensans/v34/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsjZ0B4gaVc.woff2"
+        },
+        {
+            "OpenSansBold.ttf",
+            "OpenSansBold.json",
+            "https://fonts.gstatic.com/s/opensans/v34/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1x4gaVc.woff2"
+        },
+        {
+            "SourceSansPro.ttf",
+            "SourceSansPro.json",
+            "https://fonts.gstatic.com/s/sourcesanspro/v21/6xK3dSBYKcSV-LCoeQqfX1RYOo3qOK7l.woff2"
+        },
+        {
+            "SourceSansProBold.ttf",
+            "SourceSansProBold.json",
+            "https://fonts.gstatic.com/s/sourcesanspro/v21/6xKydSBYKcSV-LCoeQqfX1RYOo3ig4vwlxdu.woff2"
+        },
+        {
+            "Montserrat.ttf",
+            "Montserrat.json",
+            "https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2"
+        },
+        {
+            "MontserratBold.ttf",
+            "MontserratBold.json",
+            "https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459W1hyw.woff2"
+        },
+        {
+            "Poppins.ttf",
+            "Poppins.json",
+            "https://fonts.gstatic.com/s/poppins/v20/pxiEyp8kv8JHgFVrJJfecg.woff2"
+        },
+        {
+            "PoppinsBold.ttf",
+            "PoppinsBold.json",
+            "https://fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2"
+        },
+        {
+            "Inter.ttf",
+            "Inter.json",
+            "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
+        },
+        {
+            "InterBold.ttf",
+            "InterBold.json",
+            "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYAZ9hiA.woff2"
+        },
+        {
+            "JetBrainsMono.ttf",
+            "JetBrainsMono.json",
+            "https://fonts.gstatic.com/s/jetbrainsmono/v13/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2"
+        },
+        {
+            "FiraCode.ttf",
+            "FiraCode.json",
+            "https://fonts.gstatic.com/s/firacode/v21/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sJVD7MOzlojwUKaJO.woff2"
+        },
+        {
+            "CascadiaCode.ttf",
+            "CascadiaCode.json",
+            "https://github.com/microsoft/cascadia-code/releases/download/v2111.01/CascadiaCode-2111.01.zip"
+        }
+    }
+
+    local loaded_fonts = {}
+
+    function Fonts.load_all_fonts()
+        for l, m in pairs(font_sources) do
+            local n, p, q = m[1], m[2], m[3]
+            if not isfile(n) then
+                local success, result = pcall(function()
+                    local r = HttpService:HttpGet(q)
+                    return decode_base64(r)
+                end)
+                if success and result then
+                    writefile(n, result)
+                end
+            end
+            if not isfile(p) then
+                local s = n:match("([^%.]+)")
+                local t = {name = s, faces = {{name = "Regular", weight = 200, style = "normal", assetId = getcustomasset(n)}}}
+                writefile(p, HttpService:JSONEncode(t))
+            end
+        end
+
+        for l, m in pairs(font_sources) do
+            local s = m[1]:match("([^%.]+)")
+            if isfile(m[2]) then
+                loaded_fonts[s] = Font.new(getcustomasset(m[2]), Enum.FontWeight.Regular)
+            end
+        end
+    end
+
+    function Fonts.get_loaded_fonts()
+        return loaded_fonts
+    end
+
+    function Fonts.get_font_names()
+        local names = {}
+        for name, _ in pairs(default_font_tuning) do
+            table.insert(names, name)
+        end
+        return names
+    end
+
+    function Fonts.get_font(name)
+        return loaded_fonts[name]
+    end
+end
+
 local Labels = {}
 local Buttons = {}
 local Toggles = {}
@@ -3718,6 +4008,14 @@ end
 function Library:SetFont(FontFace)
     if typeof(FontFace) == "EnumItem" then
         FontFace = Font.fromEnum(FontFace)
+    elseif typeof(FontFace) == "string" then
+        -- Проверяем, есть ли кастомный шрифт с таким именем
+        local customFont = Fonts.get_font(FontFace)
+        if customFont then
+            FontFace = customFont
+        elseif Enum.Font[FontFace] then
+            FontFace = Font.fromEnum(Enum.Font[FontFace])
+        end
     end
 
     Library.Scheme.Font = FontFace
