@@ -1,8 +1,12 @@
+-- Variables
 local cloneref = (cloneref or clonereference or function(instance: any) return instance end)
 local httpService = cloneref(game:GetService("HttpService"))
 local httprequest = (syn and syn.request) or request or http_request or (http and http.request)
 local getassetfunc = getcustomasset or getsynasset
-local isfolder, isfile, listfiles = isfolder, isfile, listfiles
+local isfolder, isfile, listfiles, makefolder, writefile, readfile, delfile = isfolder, isfile, listfiles, makefolder, writefile, readfile, delfile
+local getcustomasset = getcustomasset or getsynasset
+local pcall, pairs, table, string, math, task = pcall, pairs, table, string, math, task
+local typeof, tostring = typeof, tostring
 
 if typeof(copyfunction) == "function" then
     -- Fix is_____ functions for shitsploits, those functions should never error, only return a boolean.
@@ -39,6 +43,79 @@ local ThemeManager = {} do
     -- if not isfolder(ThemeManager.Folder) then makefolder(ThemeManager.Folder) end
 
     ThemeManager.Library = nil
+    
+    -- Font importing system 
+    local fonts = {}; 
+    local Register_Font; do
+        Register_Font = function(Name, Weight, Style, Asset)
+            if not isfile(Asset.Id) then
+                writefile(Asset.Id, Asset.Font)
+            end
+            
+            if isfile(Name .. ".font") then
+                delfile(Name .. ".font")
+            end
+            
+            local Data = {
+                name = Name,
+                faces = {
+                    {
+                        name = "Regular",
+                        weight = Weight,
+                        style = Style,
+                        assetId = getcustomasset(Asset.Id),
+                    },
+                },
+            }
+            
+            writefile(Name .. ".font", httpService:JSONEncode(Data))
+            
+            return getcustomasset(Name .. ".font");
+        end
+    end
+    
+    do -- Font registration
+        
+        local ProggyTiny = Register_Font("ProggyTiny", 200, "Normal", {
+            Id = "ProggyTiny.ttf",
+            Font = game:HttpGet("https://github.com/i77lhm/storage/raw/refs/heads/main/fonts/tahoma_bold.ttf"),
+        })
+
+        local ProggyClean = Register_Font("ProggyClean", 200, "normal", {
+            Id = "ProggyClean.ttf",
+            Font = game:HttpGet("https://github.com/i77lhm/storage/raw/refs/heads/main/fonts/ProggyClean.ttf")
+        })
+        
+        -- Дополнительные кастомные шрифты
+        local Montserrat = Register_Font("Montserrat", 400, "Normal", {
+            Id = "Montserrat.ttf",
+            Font = game:HttpGet("https://github.com/i77lhm/storage/raw/refs/heads/main/fonts/Montserrat-Regular.ttf")
+        })
+        
+        local OpenSans = Register_Font("OpenSans", 400, "Normal", {
+            Id = "OpenSans.ttf", 
+            Font = game:HttpGet("https://github.com/i77lhm/storage/raw/refs/heads/main/fonts/OpenSans-Regular.ttf")
+        })
+        
+        local Poppins = Register_Font("Poppins", 400, "Normal", {
+            Id = "Poppins.ttf",
+            Font = game:HttpGet("https://github.com/i77lhm/storage/raw/refs/heads/main/fonts/Poppins-Regular.ttf")
+        })
+        
+        local Inter = Register_Font("Inter", 400, "Normal", {
+            Id = "Inter.ttf",
+            Font = game:HttpGet("https://github.com/i77lhm/storage/raw/refs/heads/main/fonts/Inter-Regular.ttf")
+        })
+        
+        fonts = {
+            ["TahomaBold"] = Font.new(ProggyTiny, Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+            ["ProggyClean"] = Font.new(ProggyClean, Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+            ["Montserrat"] = Font.new(Montserrat, Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+            ["OpenSans"] = Font.new(OpenSans, Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+            ["Poppins"] = Font.new(Poppins, Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+            ["Inter"] = Font.new(Inter, Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        }
+    end
     ThemeManager.BuiltInThemes = {
         ["Default"] 		= { 1, httpService:JSONDecode([[{"FontColor":"ffffff","MainColor":"191919","AccentColor":"7d55ff","BackgroundColor":"0f0f0f","OutlineColor":"282828"}]]) },
         ["BBot"] 			= { 2, httpService:JSONDecode([[{"FontColor":"ffffff","MainColor":"1e1e1e","AccentColor":"7e48a3","BackgroundColor":"232323","OutlineColor":"141414"}]]) },
@@ -63,6 +140,21 @@ local ThemeManager = {} do
     function ThemeManager:SetLibrary(library)
         self.Library = library
     end
+    
+    function ThemeManager:GetCustomFonts()
+        return fonts
+    end
+    
+    function ThemeManager:GetAllFonts()
+        local allFonts = {"BuilderSans", "Code", "Fantasy", "Gotham", "Jura", "Roboto", "RobotoMono", "SourceSans"}
+        
+        -- Добавляем кастомные шрифты
+        for fontName, _ in pairs(fonts) do
+            table.insert(allFonts, fontName)
+        end
+        
+        return allFonts
+    end
 
     --// Folders \\--
     function ThemeManager:GetPaths()
@@ -74,6 +166,7 @@ local ThemeManager = {} do
         end
 
         paths[#paths + 1] = self.Folder .. "/themes"
+        paths[#paths + 1] = self.Folder .. "/fonts"
         
         return paths
     end
@@ -112,7 +205,12 @@ local ThemeManager = {} do
             if idx == "VideoLink" then
                 continue
             elseif idx == "FontFace" then
-                self.Library:SetFont(Enum.Font[val])
+                -- Проверяем, является ли шрифт кастомным
+                if fonts[val] then
+                    self.Library:SetFont(fonts[val])
+                else
+                    self.Library:SetFont(Enum.Font[val])
+                end
 
                 if self.Library.Options[idx] then
                     self.Library.Options[idx]:SetValue(val)
@@ -251,7 +349,7 @@ local ThemeManager = {} do
         groupbox:AddDropdown("FontFace", {
             Text = "Font Face",
             Default = "Code",
-            Values = {"BuilderSans", "Code", "Fantasy", "Gotham", "Jura", "Roboto", "RobotoMono", "SourceSans"}
+            Values = self:GetAllFonts()
         })
 
         
@@ -341,7 +439,12 @@ local ThemeManager = {} do
         self.Library.Options.OutlineColor:OnChanged(UpdateTheme)
         self.Library.Options.FontColor:OnChanged(UpdateTheme)
         self.Library.Options.FontFace:OnChanged(function(Value)
-            self.Library:SetFont(Enum.Font[Value])
+            -- Проверяем, является ли шрифт кастомным
+            if fonts[Value] then
+                self.Library:SetFont(fonts[Value])
+            else
+                self.Library:SetFont(Enum.Font[Value])
+            end
             self.Library:UpdateColorsUsingRegistry()
         end)
     end
