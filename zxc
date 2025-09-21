@@ -140,6 +140,7 @@ local Templates = {
             local H, S, V = Library.Scheme.FontColor:ToHSV()
             return Color3.fromHSV(H, S, V / 2)
         end,
+        RichText = true,
         Text = "",
         TextColor3 = "FontColor",
     },
