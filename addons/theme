@@ -258,7 +258,7 @@ local ThemeManager = {} do
         groupbox:AddLabel("Accent color"):AddColorPicker("AccentColor", { Default = self.Library.Scheme.AccentColor })
         groupbox:AddLabel("Outline color"):AddColorPicker("OutlineColor", { Default = self.Library.Scheme.OutlineColor })
         groupbox:AddLabel("Font color"):AddColorPicker("FontColor", { Default = self.Library.Scheme.FontColor })
-        groupbox:AddLabel("Risky color (Red)"):AddColorPicker("Red", { Default = self.Library.Scheme.Red })
+        groupbox:AddLabel("Risky color"):AddColorPicker("Red", { Default = self.Library.Scheme.Red })
         groupbox:AddLabel("Inline color"):AddColorPicker("Dark", { Default = self.Library.Scheme.Dark })
         groupbox:AddLabel("Cursor color"):AddColorPicker("White", { Default = self.Library.Scheme.White })
         groupbox:AddDropdown("FontFace", {
